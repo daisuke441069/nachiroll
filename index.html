@@ -1,0 +1,762 @@
+<!doctype html>
+
+<html lang="ja">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gori Roll</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bs-navbar bg-info justify-content-center">
+        <span class="navbar-brand mb-0 h1">Gori Roll</span>
+        <img src="gorira.png" class="img-fluid" alt="gorira" width="24" height="24">
+    </nav>
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="border-bottom border-info pb-2 text-secondary">時給</h2>
+            </div>
+        </div>
+        <div class="form-row mt-3">
+            <div class="form-group col-md-6">
+                <label for="billingHourlyWage" class="text-secondary">企業先請求時給(¥)</label>
+                <input type="tel" class="form-control" id="billingHourlyWage">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="areaExpense" class="text-secondary">エリア費(¥)</label>
+                <input type="tel" class="form-control" id="areaExpense">
+            </div>
+        </div>
+        <div class="form-row mt-3">
+            <div class="form-group col-md-6">
+                <label for="staffHourlyWage" class="text-secondary">スタッフ時給(¥)</label>
+                <input type="tel" class="form-control" id="staffHourlyWage">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="transportExpense" class="text-secondary">交通費(¥)</label>
+                <input type="tel" class="form-control" id="transportExpense">
+            </div>
+        </div>
+        <div class="row" style="display:none" id="adjustedWageDiv">
+            <div class="form-group col-md-12">
+                <p>
+                  基準粗利(30.5%)調整額 :
+                  <span class="text-primary font-weight-bold" id="adjustedWage"></span>
+                  円
+                </p>
+                <p>
+                  現在の粗利 :
+                  <span class="text-danger" id="currentMerginRatio"></span>
+                  %
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <h2 class="border-bottom border-info pb-2 text-secondary">勤務時間</h2>
+            </div>
+        </div>
+        <div class="form-row mt-3">
+            <div class="form-group col-md-4">
+                <label for="startWorkTime" class="text-secondary">開始</label>
+                <input type="time" class="form-control" step="300" id="startWorkTime" value="00:00">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="endWorkTime" class="text-secondary">終了</label>
+                <input type="time" class="form-control" step="300" id="endWorkTime" value="00:00">
+            </div>
+            <div class="form-group col-md-4">
+                <label for="breakTime" class="text-secondary">休憩</label>
+                <select class="custom-select" id="breakTime">
+                    <option value="0.5">30分</option>
+                    <option value="0.75">45分</option>
+                    <option selected value="1">60分</option>
+                    <option value="1.5">90分</option>
+                    <option value="2">120分</option>
+                    <option value="0">なし</option>
+                </select>
+            </div>
+        </div>
+        <div class="row justify-content-center" style="display:none" id="workTimeResult">
+            <div class="col-12">
+                    <table class="table table-bordered table-responsive-lg">
+                        <thead class="thead-light">
+                            <tr>
+                                <th scope="col">拘束(h)</th>
+                                <th scope="col">実働(h)</th>
+                                <th scope="col">休憩(h)</th>
+                                <th scope="col">通常(h)</th>
+                                <th scope="col">深夜(h)</th>
+                                <th scope="col">通常残業(h)</th>
+                                <th scope="col">深夜残業(h)</th>
+                                <th scope="col">均し(h)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td scope="row" id="worktimeTotal"></td>
+                                <td scope="row" id="worktimeActual"></td>
+                                <td scope="row" id="worktimeBreaktime"></td>
+                                <td scope="row" id="worktimeNormal"></td>
+                                <td scope="row" id="worktimeLateNight"></td>
+                                <td scope="row" id="worktimeOvertime"></td>
+                                <td scope="row" id="worktimeLateNightOvertime"></td>
+                                <td scope="row" id="worktimeNormalized"></td>
+                            </tr>
+
+
+
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <h2 class="border-bottom border-info pb-2 text-secondary">結果</h2>
+            </div>
+        </div>
+
+
+        <div class="row justify-content-center mt-3" style="display:none" id="billingPaymentBreakdown">
+            <div class="col-12">
+                <table class="table table-bordered table-responsive-lg">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">合計(¥)</th>
+                            <th scope="col">エリア/交通(¥)</th>
+                            <th scope="col">実働(¥)</th>
+                            <th scope="col">通常(¥)</th>
+                            <th scope="col">深夜(¥)</th>
+                            <th scope="col">通常残業(¥)</th>
+                            <th scope="col">深夜残業(¥)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="dailyBillingWageRow">
+                            <th scope="row">企業先請求金額(¥) / 日</th>
+                            <td scope="row" id="totalBillinglWage"></td>
+                            <td scope="row" id="areaBillinglWage"></td>
+                            <td scope="row" id="worktimeActualBillingWage"></td>
+                            <td scope="row" id="worktimeNormalBillingWage"></td>
+                            <td scope="row" id="worktimeLateNightBillingWage"></td>
+                            <td scope="row" id="worktimeOvertimeBillingWage"></td>
+                            <td scope="row" id="worktimeLateNightOvertimeBillingWage"></td>
+                        </tr>
+                        <tr id="dailyStaffWageRow">
+                            <th scope="row">スタッフ支給額(¥) / 日</th>
+                            <td scope="row" id="totalStaffWage"></td>
+                            <td scope="row" id="transportStaffWage"></td>
+                            <td scope="row" id="worktimeActualStaffWage"></td>
+                            <td scope="row" id="worktimeNormalStaffWage"></td>
+                            <td scope="row" id="worktimeLateNightStaffWage"></td>
+                            <td scope="row" id="worktimeOvertimeStaffWage"></td>
+                            <td scope="row" id="worktimeLateNightOvertimeStaffWage"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <div class="row" style="display:none" id="grossMerginDiv">
+            <div class="form-group col-md-12">
+                <label for="grossMergin" class="text-secondary">粗利(%)</label>
+                <input type="text" class="form-control text-danger font-weight-bold" id="grossMergin" readonly>
+            </div>
+        </div>
+
+
+
+
+
+        <div class="row justify-content-center mt-3" style="display:none" id="calculateResult">
+            <div class="col-12">
+                <table class="table table-bordered table-responsive-lg table-striped table-hover" id="calculateResultTbl">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col">日数</th>
+                            <th scope="col">企業請求額(¥)</th>
+                            <th scope="col">総支給額(¥)</th>
+                            <th scope="col">差引支給額(¥)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var currentWorkHours = null
+
+        // ref: https://www.kyoukaikenpo.or.jp/~/media/Files/shared/hokenryouritu/h30/ippan4gatu_2/h30414kanagawa_02.pdf
+        var insurancePremiumList = [
+            {monthlySalary: 0 , healthInsurancePremium: 2879.70 , welfarePensionInsurancePremium: 8052.00},
+            {monthlySalary: 63000 , healthInsurancePremium: 3376.20 , welfarePensionInsurancePremium: 8052.00},
+            {monthlySalary: 73000 , healthInsurancePremium: 3872.70 , welfarePensionInsurancePremium: 8052.00},
+            {monthlySalary: 83000 , healthInsurancePremium: 4369.20 , welfarePensionInsurancePremium: 8052.00},
+            {monthlySalary: 93000 , healthInsurancePremium: 4865.70 , welfarePensionInsurancePremium: 8967.00},
+            {monthlySalary: 101000 , healthInsurancePremium: 5163.60 , welfarePensionInsurancePremium: 9516.00},
+            {monthlySalary: 107000 , healthInsurancePremium: 5461.50 , welfarePensionInsurancePremium: 10065.00},
+            {monthlySalary: 114000 , healthInsurancePremium: 5858.70 , welfarePensionInsurancePremium: 10797.00},
+            {monthlySalary: 122000 , healthInsurancePremium: 6255.90 , welfarePensionInsurancePremium: 11529.00},
+            {monthlySalary: 130000 , healthInsurancePremium: 6653.10 , welfarePensionInsurancePremium: 12261.00},
+            {monthlySalary: 138000 , healthInsurancePremium: 7050.30 , welfarePensionInsurancePremium: 12993.00},
+            {monthlySalary: 146000 , healthInsurancePremium: 7447.50 , welfarePensionInsurancePremium: 13725.00},
+            {monthlySalary: 155000 , healthInsurancePremium: 7944.00 , welfarePensionInsurancePremium: 14640.00},
+            {monthlySalary: 165000 , healthInsurancePremium: 8440.50 , welfarePensionInsurancePremium: 15555.00},
+            {monthlySalary: 175000 , healthInsurancePremium: 8937.00 , welfarePensionInsurancePremium: 16470.00},
+            {monthlySalary: 185000 , healthInsurancePremium: 9433.50 , welfarePensionInsurancePremium: 17385.00},
+            {monthlySalary: 195000 , healthInsurancePremium: 9930.00 , welfarePensionInsurancePremium: 18300.00},
+            {monthlySalary: 210000 , healthInsurancePremium: 10923.00 , welfarePensionInsurancePremium: 20130.00},
+            {monthlySalary: 230000 , healthInsurancePremium: 11916.00 , welfarePensionInsurancePremium: 21960.00},
+            {monthlySalary: 250000 , healthInsurancePremium: 12909.00 , welfarePensionInsurancePremium: 23790.00},
+            {monthlySalary: 270000 , healthInsurancePremium: 13902.00 , welfarePensionInsurancePremium: 25620.00},
+            {monthlySalary: 290000 , healthInsurancePremium: 14895.00 , welfarePensionInsurancePremium: 27450.00},
+            {monthlySalary: 310000 , healthInsurancePremium: 15888.00 , welfarePensionInsurancePremium: 29280.00},
+            {monthlySalary: 330000 , healthInsurancePremium: 16881.00 , welfarePensionInsurancePremium: 31110.00},
+            {monthlySalary: 350000 , healthInsurancePremium: 17874.00 , welfarePensionInsurancePremium: 32940.00},
+            {monthlySalary: 370000 , healthInsurancePremium: 18867.00 , welfarePensionInsurancePremium: 34770.00},
+            {monthlySalary: 395000 , healthInsurancePremium: 20356.50 , welfarePensionInsurancePremium: 37515.00},
+            {monthlySalary: 425000 , healthInsurancePremium: 21846.00 , welfarePensionInsurancePremium: 40260.00},
+            {monthlySalary: 455000 , healthInsurancePremium: 23335.50 , welfarePensionInsurancePremium: 43005.00},
+            {monthlySalary: 485000 , healthInsurancePremium: 24825.00 , welfarePensionInsurancePremium: 45750.00},
+            {monthlySalary: 515000 , healthInsurancePremium: 26314.50 , welfarePensionInsurancePremium: 48495.00},
+            {monthlySalary: 545000 , healthInsurancePremium: 27804.00 , welfarePensionInsurancePremium: 51240.00},
+            {monthlySalary: 575000 , healthInsurancePremium: 29293.50 , welfarePensionInsurancePremium: 53985.00},
+            {monthlySalary: 605000 , healthInsurancePremium: 30783.00 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 635000 , healthInsurancePremium: 32272.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 665000 , healthInsurancePremium: 33762.00 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 695000 , healthInsurancePremium: 35251.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 730000 , healthInsurancePremium: 37237.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 770000 , healthInsurancePremium: 39223.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 810000 , healthInsurancePremium: 41209.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 855000 , healthInsurancePremium: 43692.00 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 905000 , healthInsurancePremium: 46174.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 955000 , healthInsurancePremium: 48657.00 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 1005000 , healthInsurancePremium: 51139.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 1055000 , healthInsurancePremium: 54118.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 1115000 , healthInsurancePremium: 57097.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 1175000 , healthInsurancePremium: 60076.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 1235000 , healthInsurancePremium: 63055.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 1295000 , healthInsurancePremium: 66034.50 , welfarePensionInsurancePremium: 56730.00},
+            {monthlySalary: 1355000 , healthInsurancePremium: 69013.50 , welfarePensionInsurancePremium: 56730.00}
+        ]
+
+        function calcWorkHours(fromHour, fromMinute, toHour, toMinute, breaktime) {
+            var dateInfo = getWorkDateInfo(fromHour, fromMinute, toHour, toMinute)
+
+            var isNeedBreaktimeInNormalWork = needBreaktimeInDayWork(dateInfo)
+            var total = calcTotalHour(dateInfo)
+            var actual = (total - breaktime)
+            if (actual < 0) {actual = 0}
+
+            var workHours = {
+                total: total,
+                actual: actual,
+                normal: calcNormalStatutoryWorkHour(dateInfo, breaktime, isNeedBreaktimeInNormalWork == true),
+                overtime: calcNormalOvertimeHour(dateInfo, breaktime),
+                lateNight: calcLateNightStatutoryWorkHour(dateInfo, breaktime, isNeedBreaktimeInNormalWork == false),
+                lateNightOvertime: calcLateNightOvertimeHour(dateInfo, breaktime),
+                breaktime: breaktime,
+                breaktimeIncludedIn: isNeedBreaktimeInNormalWork? "(通常)" : "(深夜)"
+            }
+
+            if ((total - breaktime) <= 0.0) {
+                return null
+            }
+
+            return workHours
+        }
+
+        function getNormalizedTotalWorkTime(workHours) {
+            var overtimeNormalized = workHours.overtime * 1.25
+            var lateNightNormalized = workHours.lateNight * 1.25
+            var lateNightOvertimeNormalized = workHours.lateNightOvertime * 1.5
+            return workHours.normal + overtimeNormalized + lateNightNormalized + lateNightOvertimeNormalized
+        }
+
+        function needBreaktimeInDayWork(dateInfo) {
+            var normal = calcNormalStatutoryWorkHour(dateInfo, 0, false)
+            var lateNight = calcLateNightStatutoryWorkHour(dateInfo, 0, false)
+
+            if (normal >= lateNight) {
+                return true
+            }
+            return false
+        }
+
+        function calcTotalHour(dateInfo) {
+            var diffHour = (dateInfo.to.getTime() - dateInfo.from.getTime()) / (1000 * 60 * 60)
+            return diffHour
+        }
+
+        function calcNormalStatutoryWorkHour(dateInfo, breaktime, needSubtractBreaktime) {
+            var toStatutoryWorkTime = new Date(dateInfo.from.getTime())
+            var hours = toStatutoryWorkTime.getHours() + StatutoryWorkHour() + breaktime
+            toStatutoryWorkTime.setHours(Math.floor(hours))
+
+            if (!Number.isInteger(hours)) {
+                toStatutoryWorkTime.setMinutes((hours * 60) % 60)
+            }
+
+            var toTime = toStatutoryWorkTime
+            if (toStatutoryWorkTime.getTime() > dateInfo.to.getTime()) {
+                toTime = dateInfo.to
+            }
+
+            var subtractBreaktime = needSubtractBreaktime ? breaktime : 0
+            return calcNormalWorkHour({from: dateInfo.from, to: toTime}, subtractBreaktime)
+        }
+
+        function calcNormalOvertimeHour(dateInfo, breaktime) {
+            var fromOvertime = new Date(dateInfo.from.getTime())
+
+            var hours = (fromOvertime.getHours() + StatutoryWorkHour() + breaktime)
+            fromOvertime.setHours(Math.floor(hours))
+
+            if (!Number.isInteger(hours)) {
+                fromOvertime.setMinutes((hours * 60) % 60)
+            }
+
+            if (fromOvertime.getTime() > dateInfo.to.getTime()) {
+                return 0.0
+            }
+
+            return calcNormalWorkHour({from: fromOvertime, to: dateInfo.to}, 0)
+        }
+
+        function calcNormalWorkHour(dateInfo, breaktime) {
+            var normalWorkInfo = getNormakWorkInfo(dateInfo.from)
+
+            var todayWorkRange = extractOverlappingPeriods(dateInfo, normalWorkInfo.today)
+            var nextdayWorkRange = extractOverlappingPeriods(dateInfo, normalWorkInfo.nextday)
+            var todayWorkTime = todayWorkRange ? calcDiffHour(todayWorkRange.from, todayWorkRange.to) : 0
+            var nextdayWorkTime = nextdayWorkRange ? calcDiffHour(nextdayWorkRange.from, nextdayWorkRange.to) : 0
+
+            var result = todayWorkTime + nextdayWorkTime - breaktime
+            return result
+        }
+
+        function calcLateNightStatutoryWorkHour(dateInfo, breaktime, needSubtractBreaktime) {
+            var toStatutoryWorkTime = new Date(dateInfo.from.getTime())
+
+            var hours = toStatutoryWorkTime.getHours() + StatutoryWorkHour() + breaktime
+            toStatutoryWorkTime.setHours(Math.floor(hours))
+
+            if (!Number.isInteger(hours)) {
+                toStatutoryWorkTime.setMinutes((hours * 60) % 60)
+            }
+
+            var toTime = toStatutoryWorkTime
+            if (toStatutoryWorkTime.getTime() > dateInfo.to.getTime()) {
+                toTime = dateInfo.to
+            }
+
+            var subtractBreaktime = needSubtractBreaktime ? breaktime : 0
+            return calcLateNightWorkHour({from: dateInfo.from, to: toTime}, subtractBreaktime)
+        }
+
+        function calcLateNightOvertimeHour(dateInfo, breaktime) {
+            var fromOvertime = new Date(dateInfo.from.getTime())
+
+            var hours = fromOvertime.getHours() + StatutoryWorkHour() + breaktime
+            fromOvertime.setHours(Math.floor(hours))
+
+            if (!Number.isInteger(hours)) {
+                fromOvertime.setMinutes((hours * 60) % 60)
+            }
+
+            if (fromOvertime.getTime() > dateInfo.to.getTime()) {
+                return 0.0
+            }
+            return calcLateNightWorkHour({from: fromOvertime, to: dateInfo.to}, 0)
+        }
+
+        function calcLateNightWorkHour(dateInfo, breaktime) {
+            var lateNightInfo = getLateNightInfo(dateInfo.from)
+
+            var lastDayWorkRange = extractOverlappingPeriods(dateInfo, lateNightInfo.lastday)
+            var todayWorkRange = extractOverlappingPeriods(dateInfo, lateNightInfo.today)
+            var nextdayWorkRange = extractOverlappingPeriods(dateInfo, lateNightInfo.nextday)
+
+            var lastDayWorkTime = lastDayWorkRange ? calcDiffHour(lastDayWorkRange.from, lastDayWorkRange.to) : 0
+            var todayWorkTime = todayWorkRange ? calcDiffHour(todayWorkRange.from, todayWorkRange.to) : 0
+            var nextdayWorkTime = nextdayWorkRange ? calcDiffHour(nextdayWorkRange.from, nextdayWorkRange.to) : 0
+
+            var result = lastDayWorkTime + todayWorkTime + nextdayWorkTime - breaktime
+            return result
+        }
+
+
+        // Utility Functions
+        function calcDiffHour(from, to) {
+            if (from == null || to == null) {
+                return 0
+            }
+            return (to.getTime() - from.getTime()) / (1000 * 60 * 60)
+        }
+
+        function StatutoryWorkHour() {
+            return 8.0
+        }
+
+        function configureTimeInfo(date, hour, minute) {
+            date.setHours(hour)
+            date.setMinutes(minute)
+            date.setSeconds(0)
+            date.setMilliseconds(0)
+        }
+
+        function getWorkDateInfo(fromHour, fromMinute, toHour, toMinute) {
+            var fromDate = new Date(), toDate = new Date()
+            configureTimeInfo(fromDate, fromHour, fromMinute)
+            configureTimeInfo(toDate, toHour, toMinute)
+
+            if (toDate.getTime() < fromDate.getTime()) {
+                var currentDate = toDate.getDate()
+                toDate.setDate(currentDate + 1)
+            }
+            return {from: fromDate, to: toDate}
+        }
+
+        function getNormalWorkInfoByDate(date) {
+            var fromNormalWork = new Date(date.getTime())
+            configureTimeInfo(fromNormalWork, 5, 0)
+
+            var toNormalWork = new Date(fromNormalWork.getTime())
+            toNormalWork.setHours(22)
+            return {from: fromNormalWork, to: toNormalWork}
+        }
+
+        function getNormakWorkInfo(baseDate) {
+            var date = new Date(baseDate.getTime())
+            var todayNormakWorkInfo = getNormalWorkInfoByDate(date)
+            date.setDate(date.getDate() + 1)
+            var nextdayNormakWorkInfo = getNormalWorkInfoByDate(date)
+            return {today: todayNormakWorkInfo, nextday: nextdayNormakWorkInfo}
+        }
+
+        function getLateNightInfoByDate(date) {
+            var fromLateNight = new Date(date.getTime())
+            configureTimeInfo(fromLateNight, 22, 0)
+
+            var toLateNight = new Date(fromLateNight.getTime())
+            toLateNight.setHours(toLateNight.getHours() + 7)
+            return {from: fromLateNight, to: toLateNight}
+        }
+
+        function getLateNightInfo(baseDate) {
+            var date = new Date(baseDate.getTime())
+            var todayLateNightInfo = getLateNightInfoByDate(date)
+            date.setDate(date.getDate() - 1)
+            var lastdayLateNightInfo = getLateNightInfoByDate(date)
+            date.setDate(date.getDate() + 2)
+            var nextdayLateNightInfo = getLateNightInfoByDate(date)
+            return {lastday: lastdayLateNightInfo, today: todayLateNightInfo, nextday: nextdayLateNightInfo}
+        }
+
+        function extractOverlappingPeriods(lhs, rhs) {
+            if (lhs.to.getTime() <= rhs.from.getTime()) {
+                return null
+            }
+
+            if (lhs.from.getTime() >= rhs.to.getTime()) {
+                return null
+            }
+
+            var from = rhs.from
+            if (lhs.from.getTime() > from.getTime()) {
+                from = lhs.from
+            }
+            var to = rhs.to
+            if (lhs.to.getTime() < to.getTime()) {
+                to = lhs.to
+            }
+            return {from: from, to: to}
+        }
+
+
+        // DOM handling
+        function updateWorkingTimeResult() {
+            var startTimeInput = document.getElementById("startWorkTime")
+            var endTimeInput = document.getElementById("endWorkTime")
+            var breakTimeSelect = document.getElementById("breakTime")
+
+            if (startTimeInput.value == "" || startTimeInput.value == 0) {
+                resetWorkingTimeAndCalcResult()
+                return
+            }
+            if (endTimeInput.value == "" || endTimeInput.value == 0) {
+                resetWorkingTimeAndCalcResult()
+                return
+            }
+
+            var startTime = splitTimeString(startTimeInput.value)
+            var endTime = splitTimeString(endTimeInput.value)
+            var breaktime = parseFloat(breakTimeSelect.value)
+
+            currentWorkHours = calcWorkHours(startTime.hour,startTime.minute,endTime.hour, endTime.minute, breaktime)
+
+            if (currentWorkHours == null) {
+                resetWorkingTimeAndCalcResult()
+                return
+            }
+
+            var workTimeNormalized = getNormalizedTotalWorkTime(currentWorkHours)
+
+            $('#worktimeTotal').html(currentWorkHours.total.toFixed(2))
+            $('#worktimeBreaktime').html(currentWorkHours.breaktime.toFixed(2) + " " + currentWorkHours.breaktimeIncludedIn)
+            $('#worktimeActual').html(currentWorkHours.actual.toFixed(2))
+            $('#worktimeNormal').html(currentWorkHours.normal.toFixed(2))
+            $('#worktimeOvertime').html(currentWorkHours.overtime.toFixed(2))
+            $('#worktimeLateNight').html(currentWorkHours.lateNight.toFixed(2))
+            $('#worktimeLateNightOvertime').html(currentWorkHours.lateNightOvertime.toFixed(2))
+            $('#worktimeNormalized').html(workTimeNormalized.toFixed(3))
+
+            $('#workTimeResult').fadeIn()
+
+            updateResult()
+        }
+
+        function resetWorkingTimeAndCalcResult() {
+            $('#workTimeResult').fadeOut()
+                currentWorkHours = null
+                updateResult()
+        }
+
+        function numericCheck(inputValue) {
+            if (inputValue == "" ) {
+                return false
+            }
+
+            var pattern = /^[0-9]+$/
+            var inputValueCheck = pattern.test(inputValue)
+
+            if (!inputValueCheck) {
+                alert("半角数値で金額を入力してください")
+                return false
+            }
+
+            return true
+        }
+
+        function validateWageAndAreaInput() {
+            var billingInput = document.getElementById("billingHourlyWage")
+            var staffInput = document.getElementById("staffHourlyWage")
+            var transportInput = document.getElementById("transportExpense")
+            var areaInput = document.getElementById("areaExpense")
+
+            var isValidBillingValue = numericCheck(billingInput.value)
+            var isValidStaffValue = numericCheck(staffInput.value)
+            var isValidTransportValue = numericCheck(transportInput.value)
+            var isValidAreaValue = numericCheck(areaInput.value)
+
+            if (isValidBillingValue &&
+              isValidStaffValue &&
+              isValidTransportValue &&
+              isValidAreaValue)
+            {
+                return true
+            } else {
+                return false
+            }
+        }
+
+        function getGrossMergin(staffWage, billingWage) {
+            return (((billingWage - staffWage) / billingWage) * 100).toFixed(1)
+        }
+
+        function updateGrossMergin(ratio) {
+            $('#grossMergin').val(ratio)
+        }
+
+        function updateAdjustedWage(staffDaily, billingDaily, currentGrossMerginRatio) {
+          var adjustedAmount = billingDaily.total - (billingDaily.total * 0.305)
+          var normalizedTotalWorkTime = getNormalizedTotalWorkTime(currentWorkHours)
+          var adjustedWage = Math.round((adjustedAmount - staffDaily.area) / normalizedTotalWorkTime)
+          $('#adjustedWage').html(adjustedWage)
+          $('#currentMerginRatio').html(currentGrossMerginRatio)
+        }
+
+        function updateResult() {
+            $('#calculateResult').stop(true,true).fadeOut()
+            $('#billingPaymentBreakdown').stop(true,true).fadeOut()
+            $('#grossMerginDiv').stop(true,true).fadeOut()
+            $('#adjustedWageDiv').stop(true,true).fadeOut()
+
+            if (!validateWageAndAreaInput() || currentWorkHours == null) {
+                return
+            }
+
+            var staffHourlyWage = $('#staffHourlyWage').val()
+            var billingHourlyWage = $('#billingHourlyWage').val()
+
+            var staffAreaWage = $('#transportExpense').val()
+            var billingAreaWage = $('#areaExpense').val()
+
+            var staffDaily = calcDailyPayroll(currentWorkHours, staffHourlyWage, staffAreaWage)
+            var billingDaily = calcDailyPayroll(currentWorkHours, billingHourlyWage, billingAreaWage)
+            var staffTotal = staffDaily.total
+            var billingTotal = billingDaily.total
+
+            var grossMergingRatio = getGrossMergin(staffTotal, billingTotal)
+
+            $('#calculateResultTbl tbody').empty();
+
+            var i
+            for (i = 1; i <= 31; i++) {
+                var workday = i
+                var billingAmount = formatedMoneyString(billingTotal * i)
+                var grossPayment = formatedMoneyString(staffTotal * i)
+                var taxablePayment = formatedMoneyString(getTaxablePayment(staffTotal * i))
+
+                var rowHtmlText = '<tr>' +
+                    '<th scope="row" id="workday_'+ i +'">' + workday + '</th>' +
+                    '<td scope="row" id="billingAmount_' + i + '">'+ billingAmount +'</td>' +
+                    '<td scope="row" id="grossPayment_' + i + '">' + grossPayment + '</td>' +
+                    '<td scope="row" id="taxablePayment_' + i + '">' + taxablePayment + '</td>' +
+                    '</tr>'
+                $('#calculateResultTbl').append(rowHtmlText)
+            }
+
+            // update related contents
+            updateDailyPayrollResult(staffDaily, billingDaily)
+            updateGrossMergin(grossMergingRatio)
+            updateAdjustedWage(staffDaily, billingDaily, grossMergingRatio)
+
+            $('#calculateResult').stop(true,true).fadeIn()
+            $('#billingPaymentBreakdown').stop(true,true).fadeIn()
+            $('#grossMerginDiv').stop(true,true).fadeIn()
+            $('#adjustedWageDiv').stop(true,true).fadeIn()
+        }
+
+        function getTaxablePayment(grossPayment) {
+            var resultIdx = binarySearch(0,insurancePremiumList.length - 1, grossPayment)
+            var target = insurancePremiumList[resultIdx]
+            var taxSummary = Math.ceil(target.healthInsurancePremium + target.welfarePensionInsurancePremium)
+            return grossPayment - taxSummary
+        }
+
+        function binarySearch(startIdx,endIdx,grossPayment) {
+            if ((endIdx - startIdx) == 1) {
+                var startIdxmontlySalary = insurancePremiumList[startIdx].monthlySalary
+                var endIdxmontlySalary = insurancePremiumList[endIdx].monthlySalary
+
+                if (endIdxmontlySalary < grossPayment) {
+                    return endIdx
+                } else {
+                    return startIdx
+                }
+            }
+
+            var centerIdx = (startIdx + endIdx) / 2
+            centerIdx = Math.floor(centerIdx)
+
+            var montlySalary = insurancePremiumList[centerIdx].monthlySalary
+
+            if (montlySalary > grossPayment) {
+                return binarySearch(startIdx, centerIdx, grossPayment)
+            } else if (montlySalary < grossPayment){
+                return binarySearch(centerIdx, endIdx, grossPayment)
+            } else {
+                return centerIdx
+            }
+        }
+
+        function updateDailyPayrollResult(staffDaily, billingDaily) {
+            var totalAmount = formatedMoneyString(billingDaily.total)
+            var area = formatedMoneyString(billingDaily.area)
+            var actualAmount = formatedMoneyString(billingDaily.actual)
+            var normalAmount = formatedMoneyString(billingDaily.normal)
+            var overtimeAmount = formatedMoneyString(billingDaily.overtime)
+            var latenightAmount = formatedMoneyString(billingDaily.lateNight)
+            var latenightOvertimeAmount = formatedMoneyString(billingDaily.lateNightOvertime)
+
+            $('#totalBillinglWage').html(totalAmount)
+            $('#areaBillinglWage').html(area)
+            $('#worktimeActualBillingWage').html(actualAmount)
+            $('#worktimeNormalBillingWage').html(normalAmount)
+            $('#worktimeOvertimeBillingWage').html(overtimeAmount)
+            $('#worktimeLateNightBillingWage').html(latenightAmount)
+            $('#worktimeLateNightOvertimeBillingWage').html(latenightOvertimeAmount)
+
+            totalAmount = formatedMoneyString(staffDaily.total)
+            area = formatedMoneyString(staffDaily.area)
+            actualAmount = formatedMoneyString(staffDaily.actual)
+            normalAmount = formatedMoneyString(staffDaily.normal)
+            overtimeAmount = formatedMoneyString(staffDaily.overtime)
+            latenightAmount = formatedMoneyString(staffDaily.lateNight)
+            latenightOvertimeAmount = formatedMoneyString(staffDaily.lateNightOvertime)
+
+            $('#totalStaffWage').html(totalAmount)
+            $('#transportStaffWage').html(area)
+            $('#worktimeActualStaffWage').html(actualAmount)
+            $('#worktimeNormalStaffWage').html(normalAmount)
+            $('#worktimeOvertimeStaffWage').html(overtimeAmount)
+            $('#worktimeLateNightStaffWage').html(latenightAmount)
+            $('#worktimeLateNightOvertimeStaffWage').html(latenightOvertimeAmount)
+        }
+
+        function formatedMoneyString(num) {
+            return Math.ceil(num).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+        }
+
+        function calcDailyPayroll(workHours, hourlyWage, areaWage) {
+            var normal = workHours.normal * hourlyWage
+            var overtime = workHours.overtime * Math.ceil(hourlyWage * 1.25)
+            var lateNight = workHours.lateNight * Math.ceil(hourlyWage * 1.25)
+            var lateNightOvertime = workHours.lateNightOvertime * Math.ceil(hourlyWage * 1.5)
+            var actual = normal + overtime + lateNight + lateNightOvertime
+            var total = actual + parseInt(areaWage)
+            var result = {total: total, actual: actual, area: areaWage, normal: normal, overtime: overtime, lateNight: lateNight, lateNightOvertime: lateNightOvertime}
+            return result
+        }
+
+        function splitTimeString(timeText) {
+            var timeSplit = timeText.split(':'),
+                hours,
+                minutes
+            hours = timeSplit[0]
+            minutes = timeSplit[1]
+            return {hour: hours, minute: minutes}
+        }
+
+        function addEventListenerOfChangeWorkingTime(element) {
+            element.addEventListener('change', updateWorkingTimeResult, false)
+        }
+
+        function addEventListenerOfChangeHourlyWage(element) {
+            element.addEventListener('change', updateResult, false)
+        }
+
+
+        // initialize process
+        var startTimeInput = document.getElementById("startWorkTime")
+        var endTimeInput = document.getElementById("endWorkTime")
+        var breakTimeSelect = document.getElementById("breakTime")
+
+        addEventListenerOfChangeWorkingTime(startTimeInput)
+        addEventListenerOfChangeWorkingTime(endTimeInput)
+        addEventListenerOfChangeWorkingTime(breakTimeSelect)
+
+        var staffHourlyWageInput = document.getElementById("staffHourlyWage")
+        var billingHourlyWageInput = document.getElementById("billingHourlyWage")
+        var areaExpenseInput = document.getElementById("areaExpense")
+        var transportExpenseInput = document.getElementById("transportExpense")
+        addEventListenerOfChangeHourlyWage(staffHourlyWageInput)
+        addEventListenerOfChangeHourlyWage(billingHourlyWageInput)
+        addEventListenerOfChangeHourlyWage(areaExpenseInput)
+        addEventListenerOfChangeHourlyWage(transportExpenseInput)
+
+    </script>
+</body>
+</html>
